@@ -52,7 +52,7 @@ export default function App() {
           onShowObjectImagesChange={setShowObjectImages}
         />
         <section className="relative min-w-0 flex-1 bg-white">
-          <GraphCanvas nodes={graph.nodes} edges={graph.edges} layoutKey={`${activeView}-${showObjectImages ? 'images' : 'text'}`} showObjectImages={showObjectImages} />
+          <GraphCanvas nodes={graph.nodes} edges={graph.edges} layoutKey={activeView} showObjectImages={showObjectImages} />
         </section>
       </main>
     </div>

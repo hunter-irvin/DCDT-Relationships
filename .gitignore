@@ -1,4 +1,9 @@
-app/node_modules/
-app/dist/
-app/.vite/
+# Dependencies
+node_modules/
+
+# Build output and local caches
+dist/
+.vite/
+
+# Logs
 *.log

@@ -18,15 +18,15 @@
 Create a dedicated asset folder:
 
 ```text
-app/public/object-images/
+public/object-images/
 ```
 
 Use one PNG per canonical object ID:
 
 ```text
-app/public/object-images/facility.png
-app/public/object-images/lab.png
-app/public/object-images/zone.png
+public/object-images/facility.png
+public/object-images/lab.png
+public/object-images/zone.png
 ...
 ```
 
