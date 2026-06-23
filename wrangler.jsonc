@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "dcdt-relationships",
+  "compatibility_date": "2026-06-23",
+  "main": "./worker/index.ts",
+  "assets": {
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dcdt-relationships-layout",
+      "database_id": "00000000-0000-4000-8000-000000000000"
+    }
+  ]
+}

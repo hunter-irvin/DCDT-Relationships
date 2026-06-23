@@ -8,6 +8,16 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist']),
   {
+    files: ['worker/**/*.ts', 'server/**/*.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        D1Database: 'readonly',
+        Fetcher: 'readonly',
+      },
+    },
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,

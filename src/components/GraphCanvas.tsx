@@ -5,14 +5,17 @@ import {
   ReactFlow,
   ReactFlowProvider,
   SelectionMode,
+  type NodeChange,
   useNodesState,
   useReactFlow,
   type Edge,
   type Node,
 } from '@xyflow/react'
-import { Maximize2, Minimize2, RotateCcw, Square } from 'lucide-react'
+import { Maximize2, Minimize2, RotateCcw, Save, Square } from 'lucide-react'
 import '@xyflow/react/dist/style.css'
 import { getDefaultAnchors, getNodeRect, type EdgeAnchor, type EdgeAnchors, type NodeRect } from '../graph/smartRouting'
+import type { ViewId } from '../types/graph'
+import type { ViewLayoutState } from '../types/layout'
 import { SmartOrthogonalEdge } from './edges/SmartOrthogonalEdge'
 import { DefaultNode } from './nodes/DefaultNode'
 
@@ -27,17 +30,30 @@ const edgeTypes = {
 interface GraphCanvasInnerProps {
   nodes: Node[]
   edges: Edge[]
-  layoutKey: string
+  layoutKey: ViewId
+  savedLayout: ViewLayoutState
   showObjectImages: boolean
+  onSaveLayout: (viewId: ViewId, viewLayout: ViewLayoutState) => Promise<string>
 }
 
-function GraphCanvasInner({ nodes, edges, layoutKey, showObjectImages }: GraphCanvasInnerProps) {
+type SaveStatus = 'saved' | 'dirty' | 'saving' | 'failed'
+
+const SAVE_STATUS_LABELS: Record<SaveStatus, string> = {
+  saved: 'Saved',
+  dirty: 'Unsaved changes',
+  saving: 'Saving...',
+  failed: 'Save failed',
+}
+
+function GraphCanvasInner({ nodes, edges, layoutKey, savedLayout, showObjectImages, onSaveLayout }: GraphCanvasInnerProps) {
   const { fitView, setViewport } = useReactFlow()
   const [localNodes, setLocalNodes, onNodesChange] = useNodesState(nodes)
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [edgeAnchors, setEdgeAnchors] = useState<Record<string, Partial<EdgeAnchors>>>({})
   const [isPreviewCollapsed, setIsPreviewCollapsed] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const previousLayoutKey = useRef(layoutKey)
+  const previousSavedLayout = useRef(savedLayout)
 
   const fitGraph = useCallback(() => {
     window.requestAnimationFrame(() => {
@@ -47,10 +63,15 @@ function GraphCanvasInner({ nodes, edges, layoutKey, showObjectImages }: GraphCa
 
   useEffect(() => {
     const layoutChanged = previousLayoutKey.current !== layoutKey
+    const savedLayoutChanged = previousSavedLayout.current !== savedLayout
 
     setLocalNodes((currentNodes) => {
-      if (layoutChanged) {
-        return nodes.map((node) => ({ ...node, selected: false, data: { ...node.data, showImage: showObjectImages } }))
+      if (layoutChanged || savedLayoutChanged) {
+        return applySavedNodePositions(nodes, savedLayout).map((node) => ({
+          ...node,
+          selected: false,
+          data: { ...node.data, showImage: showObjectImages },
+        }))
       }
 
       const currentPositions = new Map(currentNodes.map((node) => [node.id, node.position]))
@@ -68,11 +89,17 @@ function GraphCanvasInner({ nodes, edges, layoutKey, showObjectImages }: GraphCa
 
     if (layoutChanged) {
       setSelectedEdgeId(null)
+    }
+
+    if (layoutChanged || savedLayoutChanged) {
       setEdgeAnchors({})
+      setEdgeAnchors(filterSavedEdgeAnchors(savedLayout, edges))
+      setSaveStatus('saved')
     }
 
     previousLayoutKey.current = layoutKey
-  }, [layoutKey, nodes, setLocalNodes, showObjectImages])
+    previousSavedLayout.current = savedLayout
+  }, [edges, layoutKey, nodes, savedLayout, setLocalNodes, showObjectImages])
 
   useEffect(() => {
     fitGraph()
@@ -82,9 +109,21 @@ function GraphCanvasInner({ nodes, edges, layoutKey, showObjectImages }: GraphCa
     setSelectedEdgeId(null)
     setEdgeAnchors({})
     setLocalNodes(nodes.map((node) => ({ ...node, selected: false, data: { ...node.data, showImage: showObjectImages } })))
+    setSaveStatus('dirty')
     setViewport({ x: 80, y: 80, zoom: 0.85 }, { duration: 250 })
     window.requestAnimationFrame(() => fitView({ padding: 0.18, duration: 450 }))
   }, [fitView, nodes, setLocalNodes, setViewport, showObjectImages])
+
+  const handleNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      onNodesChange(changes)
+
+      if (changes.some((change) => change.type === 'position')) {
+        setSaveStatus('dirty')
+      }
+    },
+    [onNodesChange],
+  )
 
   const nodeRects = useMemo(() => localNodes.map(getNodeRect), [localNodes])
 
@@ -98,7 +137,19 @@ function GraphCanvasInner({ nodes, edges, layoutKey, showObjectImages }: GraphCa
         [endpoint]: anchor,
       },
     }))
+    setSaveStatus('dirty')
   }, [])
+
+  const saveCurrentLayout = useCallback(async () => {
+    setSaveStatus('saving')
+
+    try {
+      await onSaveLayout(layoutKey, collectViewLayout(localNodes, edges, edgeAnchors))
+      setSaveStatus('saved')
+    } catch {
+      setSaveStatus('failed')
+    }
+  }, [edgeAnchors, edges, layoutKey, localNodes, onSaveLayout])
 
   const smartEdges = useMemo(
     () =>
@@ -123,6 +174,18 @@ function GraphCanvasInner({ nodes, edges, layoutKey, showObjectImages }: GraphCa
   return (
     <div className="relative h-full min-h-0 flex-1">
       <div className="absolute right-4 top-4 z-10 flex gap-2">
+        <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2 py-1 shadow-sm">
+          <button
+            type="button"
+            onClick={saveCurrentLayout}
+            title="Save current layout"
+            disabled={saveStatus === 'saving'}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+          >
+            <Save size={16} aria-hidden="true" />
+          </button>
+          <span className="min-w-24 text-xs font-semibold text-slate-600">{SAVE_STATUS_LABELS[saveStatus]}</span>
+        </div>
         <button
           type="button"
           onClick={fitGraph}
@@ -164,7 +227,7 @@ function GraphCanvasInner({ nodes, edges, layoutKey, showObjectImages }: GraphCa
       <ReactFlow
         nodes={localNodes}
         edges={smartEdges}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         nodesDraggable
@@ -251,8 +314,10 @@ const distributeDefaultAnchors = (edges: Edge[], nodeRects: NodeRect[]) => {
 interface GraphCanvasProps {
   nodes: Node[]
   edges: Edge[]
-  layoutKey: string
+  layoutKey: ViewId
+  savedLayout: ViewLayoutState
   showObjectImages: boolean
+  onSaveLayout: (viewId: ViewId, viewLayout: ViewLayoutState) => Promise<string>
 }
 
 export function GraphCanvas(props: GraphCanvasProps) {
@@ -261,4 +326,33 @@ export function GraphCanvas(props: GraphCanvasProps) {
       <GraphCanvasInner {...props} />
     </ReactFlowProvider>
   )
+}
+
+const applySavedNodePositions = (nodes: Node[], savedLayout: ViewLayoutState) =>
+  nodes.map((node) => {
+    const savedPosition = savedLayout.nodePositions[node.id]
+    return savedPosition ? { ...node, position: savedPosition } : node
+  })
+
+const filterSavedEdgeAnchors = (savedLayout: ViewLayoutState, edges: Edge[]) => {
+  const edgeIds = new Set(edges.map((edge) => edge.id))
+
+  return Object.fromEntries(
+    Object.entries(savedLayout.edgeAnchors).filter(([edgeId, anchors]) => edgeIds.has(edgeId) && (anchors.source || anchors.target)),
+  )
+}
+
+const collectViewLayout = (
+  nodes: Node[],
+  edges: Edge[],
+  edgeAnchors: Record<string, Partial<EdgeAnchors>>,
+): ViewLayoutState => {
+  const edgeIds = new Set(edges.map((edge) => edge.id))
+
+  return {
+    nodePositions: Object.fromEntries(nodes.map((node) => [node.id, node.position])),
+    edgeAnchors: Object.fromEntries(
+      Object.entries(edgeAnchors).filter(([edgeId, anchors]) => edgeIds.has(edgeId) && (anchors.source || anchors.target)),
+    ),
+  }
 }

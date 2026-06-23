@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "clean": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -16,6 +17,8 @@
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.42.2",
+    "@cloudflare/workers-types": "^4.20260623.1",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.1",
     "@types/node": "^24.12.3",
@@ -32,6 +35,7 @@
     "tailwindcss": "^4.3.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "wrangler": "^4.104.0"
   }
 }

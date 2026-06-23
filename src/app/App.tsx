@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Header } from '../components/Header'
 import { GraphCanvas } from '../components/GraphCanvas'
 import { Sidebar } from '../components/Sidebar'
+import { getFallbackSharedLayout, loadSharedLayout, saveViewLayout as saveViewLayoutApi } from '../api/layout'
 import { OBJECTS } from '../data/objects'
 import { getViewConfig } from '../data/views'
 import { buildGraphForView } from '../graph/buildGraphForView'
 import type { ObjectType, ViewId } from '../types/graph'
+import type { SharedLayoutState, ViewLayoutState } from '../types/layout'
 
 const DEFAULT_TYPES: ObjectType[] = [
   'facility',
@@ -23,7 +25,30 @@ export default function App() {
   const [activeView, setActiveView] = useState<ViewId>('facility')
   const [searchTerm, setSearchTerm] = useState('')
   const [showObjectImages, setShowObjectImages] = useState(true)
+  const [sharedLayout, setSharedLayout] = useState<SharedLayoutState>(() => getFallbackSharedLayout())
   const viewConfig = getViewConfig(activeView)
+
+  useEffect(() => {
+    let isMounted = true
+
+    loadSharedLayout()
+      .then((response) => {
+        if (isMounted) setSharedLayout(response.layout)
+      })
+      .catch(() => {
+        if (isMounted) setSharedLayout(getFallbackSharedLayout())
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const saveViewLayout = async (viewId: ViewId, viewLayout: ViewLayoutState) => {
+    const response = await saveViewLayoutApi(viewId, viewLayout)
+    setSharedLayout(response.layout)
+    return response.updatedAt
+  }
 
   const graph = useMemo(
     () =>
@@ -52,7 +77,14 @@ export default function App() {
           onShowObjectImagesChange={setShowObjectImages}
         />
         <section className="relative min-w-0 flex-1 bg-white">
-          <GraphCanvas nodes={graph.nodes} edges={graph.edges} layoutKey={activeView} showObjectImages={showObjectImages} />
+          <GraphCanvas
+            nodes={graph.nodes}
+            edges={graph.edges}
+            layoutKey={activeView}
+            savedLayout={sharedLayout[activeView]}
+            showObjectImages={showObjectImages}
+            onSaveLayout={saveViewLayout}
+          />
         </section>
       </main>
     </div>

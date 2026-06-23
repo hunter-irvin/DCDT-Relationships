@@ -4,6 +4,8 @@ node_modules/
 # Build output and local caches
 dist/
 .vite/
+.wrangler/
+.dev.vars*
 
 # Logs
 *.log
