@@ -42,7 +42,7 @@ export interface ViewLayoutSaveRequest {
   viewLayout: ViewLayoutState
 }
 
-export const VIEW_IDS: LayoutViewId[] = ['facility', 'power', 'thermal']
+export const VIEW_IDS: LayoutViewId[] = ['facility', 'thermal_chain', 'power_train']
 
 export const createEmptyViewLayout = (): ViewLayoutState => ({
   nodePositions: {},
@@ -51,6 +51,6 @@ export const createEmptyViewLayout = (): ViewLayoutState => ({
 
 export const createEmptySharedLayout = (): SharedLayoutState => ({
   facility: createEmptyViewLayout(),
-  power: createEmptyViewLayout(),
-  thermal: createEmptyViewLayout(),
+  thermal_chain: createEmptyViewLayout(),
+  power_train: createEmptyViewLayout(),
 })

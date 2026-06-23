@@ -14,15 +14,13 @@ export function RelationshipSummary({
   visibleObjectCount,
 }: RelationshipSummaryProps) {
   const laneCounts = relationships.reduce<Record<string, number>>((counts, relationship) => {
-    const key = relationship.thermalFlow ?? relationship.lane ?? relationship.type
+    const key = relationship.flowRole ?? relationship.subtype ?? relationship.lane ?? relationship.type
     counts[key] = (counts[key] ?? 0) + 1
     return counts
   }, {})
 
   const labelFor = (key: string) => {
-    if (key === 'coldSupply') return 'cold supply'
-    if (key === 'warmReturn') return 'warm return'
-    return key
+    return key.replaceAll('_', ' ')
   }
 
   return (

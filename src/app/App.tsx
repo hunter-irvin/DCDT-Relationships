@@ -12,7 +12,6 @@ import type { SharedLayoutState, ViewLayoutState } from '../types/layout'
 const DEFAULT_TYPES: ObjectType[] = [
   'facility',
   'space',
-  'containment',
   'layout',
   'rack',
   'compute',

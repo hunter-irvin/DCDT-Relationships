@@ -1,7 +1,6 @@
+import { imageForAssetId } from '../model/assetImages'
 import { OBJECTS } from './objects'
 
-const OBJECT_IMAGE_VERSION = 'detailed-20260617'
-
 export const OBJECT_IMAGE_BY_ID = Object.fromEntries(
-  OBJECTS.map((object) => [object.id, `/object-images/${object.id}.png?v=${OBJECT_IMAGE_VERSION}`]),
+  OBJECTS.map((object) => [object.id, imageForAssetId(object.id)]).filter((entry): entry is [string, string] => Boolean(entry[1])),
 ) as Record<string, string>

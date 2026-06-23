@@ -2,6 +2,14 @@
 
 ## Summary
 
+Status as of 2026-06-23:
+
+- V1 shared layout persistence has been implemented locally.
+- Source has been committed and pushed through commit `876cc18eff093cf450b8daf0eb984668e1fa1b3f`.
+- Local build, lint, Worker API checks, and browser smoke tests passed.
+- Production deployment is blocked because the Sites connector returned `Sites is not yet enabled for this workspace.`
+- The graph model has since migrated to canonical view IDs: `facility`, `thermal_chain`, and `power_train`.
+
 | Step | Phase | Outcome | QA Check |
 | ---: | --- | --- | --- |
 | 1 | Hosting readiness | App is prepared for Sites-compatible deployment | Root `npm run build` passes and app still runs locally |
@@ -148,22 +156,22 @@ Example `layout_json`:
   "facility": {
     "nodePositions": {
       "facility": { "x": 120, "y": 80 },
-      "lab": { "x": 420, "y": 80 }
+      "lab_data_hall": { "x": 420, "y": 80 }
     },
     "edgeAnchors": {}
   },
-  "power": {
-    "nodePositions": {},
-    "edgeAnchors": {}
-  },
-  "thermal": {
+  "thermal_chain": {
     "nodePositions": {},
     "edgeAnchors": {
-      "thermal-cdu-to-overhead-supply": {
+      "tc_liq_005": {
         "source": { "side": "right", "offset": 0.4 },
         "target": { "side": "left", "offset": 0.6 }
       }
     }
+  },
+  "power_train": {
+    "nodePositions": {},
+    "edgeAnchors": {}
   }
 }
 ```
@@ -185,8 +193,8 @@ PUT /api/layout
 {
   "layout": {
     "facility": { "nodePositions": {}, "edgeAnchors": {} },
-    "power": { "nodePositions": {}, "edgeAnchors": {} },
-    "thermal": { "nodePositions": {}, "edgeAnchors": {} }
+    "thermal_chain": { "nodePositions": {}, "edgeAnchors": {} },
+    "power_train": { "nodePositions": {}, "edgeAnchors": {} }
   },
   "updatedAt": null
 }
@@ -198,8 +206,8 @@ PUT /api/layout
 {
   "layout": {
     "facility": { "nodePositions": {}, "edgeAnchors": {} },
-    "power": { "nodePositions": {}, "edgeAnchors": {} },
-    "thermal": { "nodePositions": {}, "edgeAnchors": {} }
+    "thermal_chain": { "nodePositions": {}, "edgeAnchors": {} },
+    "power_train": { "nodePositions": {}, "edgeAnchors": {} }
   }
 }
 ```
@@ -209,7 +217,7 @@ The API writes the single `current` row and updates `updated_at`.
 Validation:
 
 - Reject malformed JSON.
-- Validate top-level view keys against `facility`, `power`, and `thermal`.
+- Normalize known top-level view keys against `facility`, `thermal_chain`, and `power_train`; legacy/unknown view keys are ignored on read so old saved layouts do not block loading after model migrations.
 - Validate each node position has finite numeric `x` and `y` values.
 - Validate each anchor `side` is one of `top`, `right`, `bottom`, or `left`.
 - Validate each anchor `offset` is a finite number from `0` to `1`.
@@ -293,6 +301,15 @@ Optional API response:
 
 ## 10. Sites Deployment
 
+Current deployment status:
+
+- `.openai/hosting.json` exists with `d1` set to `DB` and `r2` set to `null`.
+- Cloudflare Worker-compatible Vite build is configured with `wrangler.jsonc`, `worker/index.ts`, and the Cloudflare Vite plugin.
+- D1 schema and migration files exist under `db/`.
+- A canonical preview image exists at `public/screenshot.jpeg`.
+- The deployable source state has been pushed to GitHub at commit `876cc18eff093cf450b8daf0eb984668e1fa1b3f`.
+- Attempting to create the Site failed because Sites is not enabled for the current workspace.
+
 Deployment flow:
 
 ```powershell
@@ -313,57 +330,141 @@ Then use Sites to:
 
 **QA check:** Open the deployed Site, move nodes/anchors, save, refresh, and confirm the shared state persists.
 
-## 11. Future Migration: Objects And Relationships In D1
+### Next Steps Once Sites Is Enabled
 
-When canonical graph data should become editable or database-managed, move objects and relationships from source files into normalized D1 tables.
+1. Re-run the Sites create flow.
+
+   Requested site metadata:
+
+   ```text
+   slug: dcdt-relationships
+   title: DCDT Relationships
+   description: Interactive data center relationships visualizer with shared D1-backed layout persistence.
+   ```
+
+2. Persist the returned Site project ID in `.openai/hosting.json`.
+
+   Expected shape:
+
+   ```json
+   {
+     "project_id": "returned-site-project-id",
+     "d1": "DB",
+     "r2": null
+   }
+   ```
+
+3. Commit and push the `.openai/hosting.json` update.
+
+   Example:
+
+   ```powershell
+   git add .openai/hosting.json
+   git commit -m "Persist Sites project id"
+   git push
+   ```
+
+4. Run a fresh deployment build from the pushed source state.
+
+   ```powershell
+   npm run build
+   ```
+
+5. Save a Site version using the pushed commit SHA and build artifact.
+
+   Artifact expectations:
+
+   ```text
+   dist/dcdt_relationships/index.js
+   dist/dcdt_relationships/wrangler.json
+   dist/client/**
+   dist/.openai/hosting.json
+   dist/.openai/migrations/**
+   ```
+
+6. Deploy the saved Site version to production.
+
+7. Verify the production URL:
+
+   - page loads from a fresh browser session
+   - `GET /api/layout` returns default or saved layout state
+   - moving a node marks the layout dirty
+   - saving writes the active view's layout
+   - refresh preserves saved positions
+   - saving one view does not erase saved layouts for other views
+
+## 11. Future Migration: Canonical Model In D1
+
+The app now renders graph data from the canonical Markdown model in `docs/thermal_chain_power_train_asset_relationship_model.md`. When the model should become editable or database-managed, move that canonical model into normalized D1 tables while keeping layout state separate.
 
 Potential schema:
 
 ```text
-objects
+model_versions
 - id
-- label
-- type
-- description
-- image_path
-- default_x
-- default_y
-
-object_views
-- object_id
-- view_id
-
-relationships
-- id
-- source_object_id
-- target_object_id
-- type
-- lane
-- thermal_flow
-- loop
-- label
-
-relationship_views
-- relationship_id
-- view_id
+- name
+- status
+- created_at
+- updated_at
 
 views
 - id
+- model_version_id
+- name
+- purpose
+- primary_relationship_types_json
+- layout_style
+
+groups
+- id
+- model_version_id
+- view_id
 - label
-- layout_type
-- relationship_type
+- type
+- display_order
+- parent_group_id
+- description
+
+objects
+- id
+- model_version_id
+- label
+- type
+- description
+
+object_views
+- model_version_id
+- object_id
+- view_id
+- default_group_id
+
+relationships
+- id
+- model_version_id
+- view_id
+- source_object_id
+- target_object_id
+- type
+- subtype
+- medium
+- flow_role
+- temperature_state
+- group_id
+- direction_semantics
+- label
+- notes
 ```
 
 The graph loading path would change from:
 
 ```text
-source files -> buildGraphForView()
+Markdown model -> parser -> adapter -> buildGraphForView()
 ```
 
 to:
 
 ```text
-GET /api/graph?view=thermal -> D1 query -> graph payload
+GET /api/graph?view=thermal_chain -> D1 query -> graph payload
 ```
 
 Additional design work needed before this migration:
@@ -371,7 +472,8 @@ Additional design work needed before this migration:
 - admin editing UI
 - validation for relationship source/target IDs
 - image asset ownership and upload strategy
-- import/export or seed migration from existing source files
+- seed migration from the Markdown model
+- export strategy
 - rollback/revision strategy for canonical graph data
 
-**QA check:** Seed D1 from the existing source dataset and confirm all three views render the same graph before and after migration.
+**QA check:** Seed D1 from the Markdown model and confirm all three views render the same graph before and after migration.

@@ -35,19 +35,35 @@ export function Legend({ viewConfig, availableTypes, showObjectImages, onShowObj
         <div className="mt-4 border-t border-slate-100 pt-3 text-sm text-slate-600">
           {viewConfig.relationshipType === 'hierarchical' ? 'Solid neutral lines show containment.' : 'Arrowed lines show directional flow.'}
         </div>
-        {viewConfig.id === 'thermal' && (
+        {viewConfig.id === 'thermal_chain' && (
           <div className="mt-3 grid gap-2 border-t border-slate-100 pt-3 text-sm text-slate-600">
             <div className="flex items-center gap-2">
               <span className="h-0.5 w-7 rounded-full bg-sky-600" />
-              Cold water supply
+              Cold liquid supply
             </div>
             <div className="flex items-center gap-2">
               <span className="h-0.5 w-7 rounded-full bg-red-600" />
-              Warm water return
+              Warm liquid return
             </div>
             <div className="flex items-center gap-2">
               <span className="h-0.5 w-7 rounded-full bg-teal-700" />
               Air cooling
+            </div>
+          </div>
+        )}
+        {viewConfig.id === 'power_train' && (
+          <div className="mt-3 grid gap-2 border-t border-slate-100 pt-3 text-sm text-slate-600">
+            <div className="flex items-center gap-2">
+              <span className="h-0.5 w-7 rounded-full bg-amber-600" />
+              Primary power
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="h-0.5 w-7 border-t border-dashed border-amber-600" />
+              Backup power
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="h-0.5 w-7 border-t border-dashed border-purple-600" />
+              Controls / telemetry
             </div>
           </div>
         )}

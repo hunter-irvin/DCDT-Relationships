@@ -9,8 +9,8 @@ interface ViewSwitcherProps {
 
 const icons = {
   facility: Building2,
-  power: Zap,
-  thermal: Flame,
+  power_train: Zap,
+  thermal_chain: Flame,
 }
 
 export function ViewSwitcher({ activeViewId, onChange }: ViewSwitcherProps) {

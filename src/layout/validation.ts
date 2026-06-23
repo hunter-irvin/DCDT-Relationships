@@ -52,13 +52,6 @@ export const normalizeSharedLayout = (value: unknown): SharedLayoutState => {
     throw new LayoutValidationError('layout must be an object')
   }
 
-  const allowedViews = new Set(VIEW_IDS)
-  Object.keys(value).forEach((key) => {
-    if (!allowedViews.has(key as never)) {
-      throw new LayoutValidationError(`Unsupported layout view: ${key}`)
-    }
-  })
-
   const layout = createEmptySharedLayout()
 
   VIEW_IDS.forEach((viewId) => {

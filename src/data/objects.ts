@@ -1,9 +1,9 @@
-import type { GraphObject, ObjectType } from '../types/graph'
+import { modelToGraphObjects } from '../model/toGraph'
+import type { ObjectType } from '../types/graph'
 
 export const OBJECT_TYPE_LABELS: Record<ObjectType, string> = {
   facility: 'Facility',
   space: 'Space',
-  containment: 'Containment',
   layout: 'Layout',
   rack: 'Rack',
   compute: 'Compute',
@@ -12,38 +12,4 @@ export const OBJECT_TYPE_LABELS: Record<ObjectType, string> = {
   controls: 'Controls',
 }
 
-export const OBJECTS: GraphObject[] = [
-  { id: 'facility', label: 'Facility', type: 'facility', views: ['facility'] },
-  { id: 'lab', label: 'Lab / Data Hall', type: 'space', views: ['facility'] },
-  { id: 'zone', label: 'Zone / Pod', type: 'space', views: ['facility'] },
-  { id: 'hac', label: 'Hot Aisle Containment', type: 'containment', views: ['facility', 'thermal'] },
-  { id: 'aisle', label: 'Aisle', type: 'layout', views: ['facility', 'thermal'] },
-  { id: 'row', label: 'Row', type: 'layout', views: ['facility', 'power', 'thermal'] },
-  { id: 'rack', label: 'Rack', type: 'rack', views: ['facility', 'power', 'thermal'] },
-  { id: 'chassis', label: 'Rack Unit / Chassis', type: 'compute', views: ['facility'] },
-  { id: 'serverNode', label: 'Server Tray / Server Node', type: 'compute', views: ['facility', 'power', 'thermal'] },
-  { id: 'gpu', label: 'GPU', type: 'compute', views: ['facility', 'power', 'thermal'] },
-  { id: 'rpp', label: 'Remote Power Panel', type: 'power', views: ['power'] },
-  { id: 'breaker', label: 'Circuit Breaker', type: 'power', views: ['power'] },
-  { id: 'rackPdu', label: 'Rack PDU', type: 'power', views: ['power'] },
-  { id: 'psu', label: 'Power Supply Unit', type: 'power', views: ['power'] },
-  { id: 'plc', label: 'PLC / Controls', type: 'controls', views: ['power', 'thermal'] },
-  { id: 'chillerPlant', label: 'Chiller / Cooling Plant', type: 'thermal', views: ['thermal'] },
-  { id: 'facilitySupplyHeader', label: 'Facility Supply Header', type: 'thermal', views: ['thermal'] },
-  { id: 'facilityReturnHeader', label: 'Facility Return Header', type: 'thermal', views: ['thermal'] },
-  { id: 'cdu', label: 'CDU', type: 'thermal', views: ['facility', 'power', 'thermal'] },
-  { id: 'overheadSupply', label: 'Overhead Supply Header', type: 'thermal', views: ['thermal'] },
-  { id: 'rowBranchSupply', label: 'Row / Branch Supply', type: 'thermal', views: ['thermal'] },
-  { id: 'rackSupplyManifold', label: 'Rack Supply Manifold', type: 'thermal', views: ['thermal'] },
-  { id: 'quickDisconnect', label: 'Quick Disconnects', type: 'thermal', views: ['thermal'] },
-  { id: 'coldPlate', label: 'Cold Plate', type: 'thermal', views: ['thermal'] },
-  { id: 'serverReturn', label: 'Server Tray Return', type: 'thermal', views: ['thermal'] },
-  { id: 'rackReturnManifold', label: 'Rack Return Manifold', type: 'thermal', views: ['thermal'] },
-  { id: 'rowBranchReturn', label: 'Row / Branch Return', type: 'thermal', views: ['thermal'] },
-  { id: 'overheadReturn', label: 'Overhead Return Header', type: 'thermal', views: ['thermal'] },
-  { id: 'coldAisleAir', label: 'Cold Aisle Supply Air', type: 'thermal', views: ['thermal'] },
-  { id: 'serverFans', label: 'Server Fans', type: 'thermal', views: ['thermal'] },
-  { id: 'residualHeat', label: 'Residual Component Heat', type: 'thermal', views: ['thermal'] },
-  { id: 'hotAisleAir', label: 'Hot Aisle / Exhaust Air', type: 'thermal', views: ['thermal'] },
-  { id: 'crah', label: 'CRAH / CRAC', type: 'thermal', views: ['thermal'] },
-]
+export const OBJECTS = modelToGraphObjects()

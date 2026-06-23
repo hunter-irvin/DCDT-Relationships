@@ -1,23 +1,19 @@
-export type ViewId = 'facility' | 'power' | 'thermal'
+import type {
+  AssetType,
+  FlowRole,
+  Medium,
+  ModelViewId,
+  RelationshipSubtype,
+  TemperatureState,
+} from '../model/types'
 
-export type ObjectType =
-  | 'facility'
-  | 'space'
-  | 'containment'
-  | 'layout'
-  | 'rack'
-  | 'compute'
-  | 'power'
-  | 'thermal'
-  | 'controls'
+export type ViewId = ModelViewId
+
+export type ObjectType = AssetType
 
 export type RelationshipType = 'hierarchical' | 'directional'
 
-export type LaneId = 'liquid' | 'air' | 'power'
-
-export type ThermalFlow = 'coldSupply' | 'warmReturn' | 'air' | 'control'
-
-export type LoopId = 'facility' | 'cdu-secondary' | 'air' | 'power'
+export type LaneId = string
 
 export interface GraphObject {
   id: string
@@ -25,6 +21,7 @@ export interface GraphObject {
   type: ObjectType
   description?: string
   views: ViewId[]
+  defaultGroups?: Partial<Record<ViewId, string>>
   tags?: string[]
 }
 
@@ -35,8 +32,12 @@ export interface GraphRelationship {
   type: RelationshipType
   views: ViewId[]
   lane?: LaneId
-  thermalFlow?: ThermalFlow
-  loop?: LoopId
+  subtype?: RelationshipSubtype
+  medium?: Medium
+  flowRole?: FlowRole
+  temperatureState?: TemperatureState
+  directionSemantics?: string
+  notes?: string
   label?: string
 }
 
